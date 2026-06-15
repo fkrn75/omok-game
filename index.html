@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>오목</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg-1: #f4e8d8;
+      --bg-2: #d9c0a5;
+      --panel: rgba(255, 250, 242, 0.92);
+      --panel-border: rgba(90, 58, 31, 0.16);
+      --text: #2d2016;
+      --muted: #6f5742;
+      --accent: #8f5a2e;
+      --accent-strong: #6a3d18;
+      --shadow: 0 24px 60px rgba(74, 44, 20, 0.18);
+      --stone-black: #1c1b1a;
+      --stone-white: #faf7f1;
+      --stone-outline: rgba(0, 0, 0, 0.16);
+      --line: #73553d;
+      --board: #d8ab73;
+      --board-edge: #b27c47;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.55), transparent 32%),
+        radial-gradient(circle at 80% 20%, rgba(255, 223, 185, 0.55), transparent 28%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(1100px, 100%);
+      display: grid;
+      gap: 18px;
+      grid-template-columns: minmax(320px, 1fr) minmax(260px, 320px);
+      align-items: start;
+    }
+
+    .board-shell,
+    .sidebar {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .board-shell {
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 3vw, 42px);
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status {
+      display: grid;
+      gap: 6px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(111, 87, 66, 0.12);
+      min-width: 220px;
+    }
+
+    .status-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .status-value {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .canvas-wrap {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 22px;
+      overflow: hidden;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.22), transparent),
+        linear-gradient(180deg, #e9b97d, var(--board));
+      border: 1px solid rgba(96, 60, 28, 0.18);
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .sidebar {
+      padding: 20px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .panel {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.64);
+      border: 1px solid rgba(111, 87, 66, 0.12);
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .legend {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .legend li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid var(--stone-outline);
+      flex: 0 0 auto;
+    }
+
+    .dot.black {
+      background: radial-gradient(circle at 35% 35%, #4a4a4a, var(--stone-black));
+    }
+
+    .dot.white {
+      background: radial-gradient(circle at 35% 35%, #ffffff, var(--stone-white));
+    }
+
+    .moves {
+      display: grid;
+      gap: 8px;
+      max-height: 240px;
+      overflow: auto;
+      padding-right: 4px;
+      margin: 0;
+      list-style: none;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .moves li {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.48);
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 18px rgba(74, 44, 20, 0.16);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .primary {
+      background: linear-gradient(180deg, #a86b38, var(--accent));
+      color: white;
+    }
+
+    .ghost {
+      background: rgba(255, 255, 255, 0.68);
+      color: var(--accent-strong);
+      border: 1px solid rgba(111, 87, 66, 0.16);
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 920px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        order: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="board-shell">
+      <div class="topbar">
+        <div>
+          <h1>오목</h1>
+          <div class="subtitle">자유 오목 규칙, 마지막 착수점 기준 4방향 국소 판정</div>
+        </div>
+        <div class="status" aria-live="polite">
+          <div class="status-label">현재 상태</div>
+          <div class="status-value" id="statusText">검은 돌 차례</div>
+        </div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="board" aria-label="오목 판"></canvas>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <section class="panel">
+        <h2>규칙</h2>
+        <ul class="legend">
+          <li><span class="dot black"></span> 검은 돌이 먼저 둡니다.</li>
+          <li><span class="dot white"></span> 금수 없이 5목 이상이면 즉시 승리합니다.</li>
+          <li>마지막 착수점 기준 4방향만 검사해서 판정합니다.</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <h2>최근 착수</h2>
+        <ol class="moves" id="moveList"></ol>
+      </section>
+
+      <section class="controls">
+        <button class="primary" id="resetButton" type="button">다시 시작</button>
+        <button class="ghost" id="undoButton" type="button">무르기</button>
+      </section>
+
+      <section class="panel">
+        <h2>안내</h2>
+        <div class="footer-note">
+          바둑판 교차점에 놓습니다. 판이 꽉 차면 무승부로 종료되고, 승리선이 생기면 게임이 멈춥니다.
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    const GameState = (() => {
+      const SIZE = 15;
+
+      function createEmptyBoard() {
+        return Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+      }
+
+      function createInitialState() {
+        return {
+          size: SIZE,
+          board: createEmptyBoard(),
+          currentPlayer: 1,
+          moveHistory: [],
+          status: "playing",
+          winner: null,
+          winLine: null,
+          lastMove: null
+        };
+      }
+
+      function reset(state) {
+        state.board = createEmptyBoard();
+        state.currentPlayer = 1;
+        state.moveHistory = [];
+        state.status = "playing";
+        state.winner = null;
+        state.winLine = null;
+        state.lastMove = null;
+      }
+
+      function placeStone(state, x, y, player) {
+        state.board[y][x] = player;
+        state.moveHistory.push({ x, y, player });
+        state.lastMove = { x, y, player };
+      }
+
+      function undoLastMove(state) {
+        const move = state.moveHistory.pop();
+        if (!move) {
+          return false;
+        }
+
+        state.board[move.y][move.x] = 0;
+        state.currentPlayer = move.player;
+        state.status = "playing";
+        state.winner = null;
+        state.winLine = null;
+        state.lastMove = state.moveHistory[state.moveHistory.length - 1] || null;
+        return true;
+      }
+
+      function setStatus(state, status) {
+        state.status = status;
+      }
+
+      function setWinner(state, winner) {
+        state.winner = winner;
+      }
+
+      function setWinLine(state, winLine) {
+        state.winLine = winLine;
+      }
+
+      function switchTurn(state) {
+        state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+      }
+
+      return {
+        createInitialState,
+        reset,
+        placeStone,
+        undoLastMove,
+        setStatus,
+        setWinner,
+        setWinLine,
+        switchTurn
+      };
+    })();
+
+    const Rules = (() => {
+      const DIRECTIONS = [
+        { dx: 1, dy: 0 },
+        { dx: 0, dy: 1 },
+        { dx: 1, dy: 1 },
+        { dx: 1, dy: -1 }
+      ];
+
+      function isValidMove(state, x, y) {
+        const insideBoard = x >= 0 && y >= 0 && x < state.size && y < state.size;
+        return state.status === "playing" && insideBoard && state.board[y][x] === 0;
+      }
+
+      function checkWin(board, x, y, player) {
+        for (const { dx, dy } of DIRECTIONS) {
+          const line = [{ x, y }];
+
+          let count = 1;
+          for (let step = 1; ; step += 1) {
+            const nx = x + dx * step;
+            const ny = y + dy * step;
+            if (ny < 0 || ny >= board.length || nx < 0 || nx >= board.length || board[ny][nx] !== player) {
+              break;
+            }
+            line.push({ x: nx, y: ny });
+            count += 1;
+          }
+
+          for (let step = 1; ; step += 1) {
+            const nx = x - dx * step;
+            const ny = y - dy * step;
+            if (ny < 0 || ny >= board.length || nx < 0 || nx >= board.length || board[ny][nx] !== player) {
+              break;
+            }
+            line.unshift({ x: nx, y: ny });
+            count += 1;
+          }
+
+          if (count >= 5) {
+            return line.slice(0, 5);
+          }
+        }
+
+        return null;
+      }
+
+      function isDraw(state) {
+        return state.moveHistory.length === state.size * state.size && state.status === "playing";
+      }
+
+      return {
+        isValidMove,
+        checkWin,
+        isDraw
+      };
+    })();
+
+    const Renderer = (() => {
+      const canvas = document.getElementById("board");
+      const context = canvas.getContext("2d");
+      const statusText = document.getElementById("statusText");
+      const moveList = document.getElementById("moveList");
+      const boardShell = canvas.parentElement;
+
+      const layout = {
+        size: 0,
+        margin: 0,
+        cellSize: 0,
+        boardPixelSize: 0,
+        deviceScale: Math.max(1, window.devicePixelRatio || 1)
+      };
+
+      function resizeCanvas() {
+        const rect = boardShell.getBoundingClientRect();
+        const displaySize = Math.max(320, Math.floor(Math.min(rect.width, rect.height)));
+
+        canvas.width = Math.floor(displaySize * layout.deviceScale);
+        canvas.height = Math.floor(displaySize * layout.deviceScale);
+        canvas.style.width = `${displaySize}px`;
+        canvas.style.height = `${displaySize}px`;
+        context.setTransform(layout.deviceScale, 0, 0, layout.deviceScale, 0, 0);
+
+        layout.size = displaySize;
+        layout.margin = Math.max(22, Math.round(displaySize * 0.07));
+        layout.cellSize = (displaySize - layout.margin * 2) / 14;
+        layout.boardPixelSize = displaySize;
+      }
+
+      function getLayout() {
+        return layout;
+      }
+
+      function drawBoard() {
+        const size = layout.size;
+        const margin = layout.margin;
+        const cell = layout.cellSize;
+        const boardSize = layout.boardPixelSize;
+
+        context.clearRect(0, 0, boardSize, boardSize);
+
+        const gradient = context.createLinearGradient(0, 0, boardSize, boardSize);
+        gradient.addColorStop(0, "#e9bd85");
+        gradient.addColorStop(1, "#cd9559");
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, boardSize, boardSize);
+
+        context.strokeStyle = "rgba(98, 61, 28, 0.24)";
+        context.lineWidth = 2;
+        context.strokeRect(1, 1, boardSize - 2, boardSize - 2);
+
+        context.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--line").trim();
+        context.lineWidth = 1.2;
+
+        for (let i = 0; i < 15; i += 1) {
+          const pos = Math.round(margin + i * cell) + 0.5;
+
+          context.beginPath();
+          context.moveTo(margin + 0.5, pos);
+          context.lineTo(boardSize - margin + 0.5, pos);
+          context.stroke();
+
+          context.beginPath();
+          context.moveTo(pos, margin + 0.5);
+          context.lineTo(pos, boardSize - margin + 0.5);
+          context.stroke();
+        }
+
+        const starPoints = [
+          [3, 3],
+          [11, 3],
+          [7, 7],
+          [3, 11],
+          [11, 11]
+        ];
+
+        context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--line").trim();
+        for (const [x, y] of starPoints) {
+          const px = margin + x * cell;
+          const py = margin + y * cell;
+          context.beginPath();
+          context.arc(px, py, Math.max(2.8, cell * 0.08), 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+
+      function drawStone(x, y, player, isLastMove = false) {
+        const { margin, cellSize } = layout;
+        const px = margin + x * cellSize;
+        const py = margin + y * cellSize;
+        const radius = cellSize * 0.42;
+
+        context.save();
+        const gradient = context.createRadialGradient(
+          px - radius * 0.28,
+          py - radius * 0.28,
+          radius * 0.12,
+          px,
+          py,
+          radius
+        );
+
+        if (player === 1) {
+          gradient.addColorStop(0, "#5a5958");
+          gradient.addColorStop(0.45, "#151414");
+          gradient.addColorStop(1, "#050505");
+        } else {
+          gradient.addColorStop(0, "#ffffff");
+          gradient.addColorStop(0.55, "#f2eee7");
+          gradient.addColorStop(1, "#dbd3c8");
+        }
+
+        context.fillStyle = gradient;
+        context.beginPath();
+        context.arc(px, py, radius, 0, Math.PI * 2);
+        context.fill();
+
+        context.lineWidth = 1.25;
+        context.strokeStyle = "rgba(0, 0, 0, 0.18)";
+        context.stroke();
+
+        if (isLastMove) {
+          context.beginPath();
+          context.arc(px, py, radius + 4, 0, Math.PI * 2);
+          context.lineWidth = 2;
+          context.strokeStyle = "rgba(232, 74, 34, 0.78)";
+          context.stroke();
+        }
+
+        context.restore();
+      }
+
+      function drawWinLine(winLine) {
+        if (!winLine || winLine.length < 2) {
+          return;
+        }
+
+        const first = winLine[0];
+        const last = winLine[winLine.length - 1];
+        const startX = layout.margin + first.x * layout.cellSize;
+        const startY = layout.margin + first.y * layout.cellSize;
+        const endX = layout.margin + last.x * layout.cellSize;
+        const endY = layout.margin + last.y * layout.cellSize;
+
+        context.save();
+        context.lineCap = "round";
+        context.lineWidth = Math.max(6, layout.cellSize * 0.12);
+        context.strokeStyle = "rgba(231, 72, 32, 0.84)";
+        context.beginPath();
+        context.moveTo(startX, startY);
+        context.lineTo(endX, endY);
+        context.stroke();
+        context.restore();
+      }
+
+      function drawStones(state) {
+        for (let y = 0; y < state.size; y += 1) {
+          for (let x = 0; x < state.size; x += 1) {
+            const stone = state.board[y][x];
+            if (stone !== 0) {
+              const isLastMove = Boolean(state.lastMove && state.lastMove.x === x && state.lastMove.y === y);
+              drawStone(x, y, stone, isLastMove);
+            }
+          }
+        }
+
+        if (state.winLine) {
+          drawWinLine(state.winLine);
+        }
+      }
+
+      function setStatusText(text) {
+        statusText.textContent = text;
+      }
+
+      function renderMoveList(state) {
+        moveList.innerHTML = "";
+        const items = state.moveHistory.slice().reverse().slice(0, 20);
+        if (items.length === 0) {
+          const empty = document.createElement("li");
+          empty.textContent = "아직 착수 기록이 없습니다.";
+          moveList.appendChild(empty);
+          return;
+        }
+
+        for (const [index, move] of items.entries()) {
+          const li = document.createElement("li");
+          const who = move.player === 1 ? "흑" : "백";
+          const total = state.moveHistory.length - index;
+          li.innerHTML = `<span>${total}. ${who}</span><span>(${move.x + 1}, ${move.y + 1})</span>`;
+          moveList.appendChild(li);
+        }
+      }
+
+      function render(state) {
+        drawBoard();
+        drawStones(state);
+        renderMoveList(state);
+
+        if (state.status === "playing") {
+          setStatusText(state.currentPlayer === 1 ? "검은 돌 차례" : "흰 돌 차례");
+        } else if (state.status === "win") {
+          setStatusText(`${state.winner === 1 ? "검은 돌" : "흰 돌"} 승리!`);
+        } else {
+          setStatusText("무승부");
+        }
+      }
+
+      return {
+        canvas,
+        resizeCanvas,
+        getLayout,
+        render,
+        setStatusText
+      };
+    })();
+
+    const Game = (() => {
+      const state = GameState.createInitialState();
+      const resetButton = document.getElementById("resetButton");
+      const undoButton = document.getElementById("undoButton");
+
+      function pointToCell(px, py) {
+        const layout = Renderer.getLayout();
+        const x = Math.round((px - layout.margin) / layout.cellSize);
+        const y = Math.round((py - layout.margin) / layout.cellSize);
+        const withinBounds = x >= 0 && y >= 0 && x < state.size && y < state.size;
+        if (!withinBounds) {
+          return null;
+        }
+
+        const cellX = layout.margin + x * layout.cellSize;
+        const cellY = layout.margin + y * layout.cellSize;
+        const distance = Math.hypot(px - cellX, py - cellY);
+        if (distance > layout.cellSize * 0.42) {
+          return null;
+        }
+
+        return { x, y };
+      }
+
+      function refresh() {
+        Renderer.render(state);
+        undoButton.disabled = state.moveHistory.length === 0 || state.status !== "playing";
+      }
+
+      function endIfNeeded(x, y) {
+        const player = state.currentPlayer;
+        const winLine = Rules.checkWin(state.board, x, y, player);
+        if (winLine) {
+          GameState.setWinner(state, player);
+          GameState.setWinLine(state, winLine);
+          GameState.setStatus(state, "win");
+          return true;
+        }
+
+        if (Rules.isDraw(state)) {
+          GameState.setStatus(state, "draw");
+          return true;
+        }
+
+        return false;
+      }
+
+      function placeStone(x, y) {
+        if (!Rules.isValidMove(state, x, y)) {
+          return;
+        }
+
+        const player = state.currentPlayer;
+        GameState.placeStone(state, x, y, player);
+        if (endIfNeeded(x, y)) {
+          refresh();
+          return;
+        }
+
+        GameState.switchTurn(state);
+        refresh();
+      }
+
+      function handleClick(event) {
+        const rect = Renderer.canvas.getBoundingClientRect();
+        const px = (event.clientX - rect.left) * (Renderer.canvas.width / rect.width) / Renderer.getLayout().deviceScale;
+        const py = (event.clientY - rect.top) * (Renderer.canvas.height / rect.height) / Renderer.getLayout().deviceScale;
+        const cell = pointToCell(px, py);
+        if (!cell) {
+          return;
+        }
+
+        placeStone(cell.x, cell.y);
+      }
+
+      function reset() {
+        GameState.reset(state);
+        refresh();
+      }
+
+      function undo() {
+        if (!GameState.undoLastMove(state)) {
+          return;
+        }
+
+        refresh();
+      }
+
+      function init() {
+        Renderer.canvas.addEventListener("click", handleClick);
+        resetButton.addEventListener("click", reset);
+        undoButton.addEventListener("click", undo);
+        window.addEventListener("resize", () => {
+          Renderer.resizeCanvas();
+          refresh();
+        });
+
+        Renderer.resizeCanvas();
+        refresh();
+      }
+
+      return {
+        init
+      };
+    })();
+
+    const main = (() => {
+      function init() {
+        Game.init();
+      }
+
+      return {
+        init
+      };
+    })();
+
+    main.init();
+  </script>
+</body>
+</html>
