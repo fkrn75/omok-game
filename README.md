@@ -1,7 +1,9 @@
 # 오목게임
 
-단일 `index.html` 파일로 구현한 자유 오목 게임입니다.  
-문서에 맞춰 내부를 책임별 5개 모듈로 나눴습니다.
+단일 `index.html` 파일로 만든 자유 오목 게임입니다.  
+내부는 책임별 5개 모듈로 나누어 구현했습니다.
+
+> 이 프로젝트는 Codex를 사용해 구현하고 정리했습니다.
 
 ## 실행 방법
 
@@ -11,7 +13,7 @@
 ## 조작 방법
 
 - 바둑판 교차점을 마우스로 클릭해 돌을 놓습니다.
-- 검은 돌이 선공입니다.
+- 검은 돌이 먼저 둡니다.
 - `다시 시작` 버튼으로 새 게임을 시작할 수 있습니다.
 - `무르기` 버튼으로 마지막 한 수를 취소할 수 있습니다.
 
@@ -42,8 +44,8 @@
 
 ## 배포 주소
 
-- GitHub Pages: `https://fkrn75.github.io/omok-game/`
-- GitHub Repository: [https://github.com/fkrn75/omok-game](https://github.com/fkrn75/omok-game)
+- GitHub Pages: <https://fkrn75.github.io/omok-game/>
+- GitHub Repository: <https://github.com/fkrn75/omok-game>
 
 ## 문서
 
